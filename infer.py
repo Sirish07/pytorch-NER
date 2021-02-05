@@ -89,5 +89,7 @@ if __name__ == '__main__':
     model.load_state_dict(torch.load(model_name))
     test_model(test_dataloader, model, word_vocab, label_vocab, test_pred_file, use_gpu)
 
+    print()
+    print()
     print("Compressed sentence is \n")
     print(prediction(test_pred_file))
