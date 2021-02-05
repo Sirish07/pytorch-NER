@@ -4,7 +4,7 @@ from torch.nn.utils.rnn import pack_padded_sequence, pad_packed_sequence
 import numpy as np
 from crf import CRF
 from charcnn import CharCNN
-
+from sklearn.metrics import f1_score
 
 class NamedEntityRecog(nn.Module):
     def __init__(self, vocab_size, word_embed_dim, word_hidden_dim, alphabet_size, char_embedding_dim, char_hidden_dim,
@@ -74,7 +74,6 @@ class NamedEntityRecog(nn.Module):
             feature_out = self.cnn(word_in).transpose(1, 2).contiguous()
 
         feature_out = self.hidden2tag(feature_out)
-
         if self.use_crf:
             total_loss = self.crf.neg_log_likelihood_loss(feature_out, mask, batch_label)
         else:

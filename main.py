@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from model import NamedEntityRecog
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
-from train import train_model, evaluate
+from train import train_model, evaluate, test_model
 
 seed_num = 42
 random.seed(seed_num)
@@ -25,19 +25,19 @@ if __name__ == '__main__':
     parser.add_argument('--char_hidden_dim', type=int, default=50)
     parser.add_argument('--dropout', type=float, default=0.5)
     parser.add_argument('--pretrain_embed_path', default='data/glove.6B.100d.txt')
-    parser.add_argument('--savedir', default='data/model/')
-    parser.add_argument('--batch_size', type=int, default=10)
-    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--savedir', default='data/model')
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--epochs', type=int, default=1)
     parser.add_argument('--optimizer', default='sgd')
     parser.add_argument('--lr', type=float, default=0.015)
     parser.add_argument('--feature_extractor', choices=['lstm', 'cnn'], default='cnn')
     parser.add_argument('--use_char', type=bool, default=True)
-    parser.add_argument('--train_path', default='data/eng.train')
-    parser.add_argument('--dev_path', default='data/eng.testa')
-    parser.add_argument('--test_path', default='data/eng.testb')
+    parser.add_argument('--train_path', default='/content/train.iob')
+    parser.add_argument('--dev_path', default='/content/eval.iob')
+    parser.add_argument('--test_path', default='/content/eval.iob')
     parser.add_argument('--patience', type=int, default=10)
     parser.add_argument('--number_normalized', type=bool, default=True)
-    parser.add_argument('--use_crf', type=bool, default=False)
+    parser.add_argument('--use_crf', type=bool, default=True)
 
     args = parser.parse_args()
     use_gpu = torch.cuda.is_available()
@@ -55,7 +55,8 @@ if __name__ == '__main__':
     if not os.path.exists(eval_temp):
         os.makedirs(eval_temp)
 
-    pred_file = eval_temp + '/pred.txt'
+    val_pred_file = eval_temp + '/val_pred.txt'
+    test_pred_file = eval_temp + '/test_pred.txt'
     score_file = eval_temp + '/score.txt'
 
     model_name = args.savedir + '/' + args.feature_extractor + str(args.use_char) + str(args.use_crf)
@@ -100,8 +101,8 @@ if __name__ == '__main__':
         epoch_begin = time.time()
         print('train {}/{} epoch'.format(epoch + 1, args.epochs))
         optimizer = lr_decay(optimizer, epoch, 0.05, args.lr)
-        batch_num = train_model(train_dataloader, model, optimizer, batch_num, writer, use_gpu)
-        new_f1 = evaluate(dev_dataloader, model, word_vocab, label_vocab, pred_file, score_file, eval_script, use_gpu)
+        batch_num, trainloss = train_model(train_dataloader, model, optimizer, batch_num, writer, use_gpu)
+        new_f1, vloss = evaluate(dev_dataloader, model, word_vocab, label_vocab, val_pred_file, score_file, eval_script, use_gpu)
         print('f1 is {} at {}th epoch on dev set'.format(new_f1, epoch + 1))
         if new_f1 > best_f1:
             best_f1 = new_f1
@@ -114,6 +115,8 @@ if __name__ == '__main__':
         epoch_end = time.time()
         cost_time = epoch_end - epoch_begin
         print('train {}th epoch cost {}m {}s'.format(epoch + 1, int(cost_time / 60), int(cost_time % 60)))
+        print('Training Loss after epoch no. %s is %s'%(epoch, trainloss))
+        print('Validation Loss after epoch no. %s is %s'%(epoch, vloss))
         print()
 
         if early_stop > args.patience:
@@ -132,5 +135,5 @@ if __name__ == '__main__':
     print('-' * 50)
 
     model.load_state_dict(torch.load(model_name))
-    test_acc = evaluate(test_dataloader, model, word_vocab, label_vocab, pred_file, score_file, eval_script, use_gpu)
+    test_model(test_dataloader, model, word_vocab, label_vocab, test_pred_file, score_file, eval_script, use_gpu)
     print('test acc on test set:', test_acc)
