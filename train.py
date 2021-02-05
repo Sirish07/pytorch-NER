@@ -47,7 +47,6 @@ def evaluate(dataloader, model, word_vocab, label_vocab, pred_file, score_file, 
         mask = get_mask(batch_text)
         with torch.no_grad():
             tag_seq = model(batch_text, seq_length, char_inputs, batch_label, mask)
-            print(tag_seq.size(), batch_label.size())
             loss = model.neg_log_likelihood_loss(batch_text, seq_length, char_inputs, batch_label, mask)
         for line_tesor, labels_tensor, predicts_tensor in zip(batch_text, batch_label, tag_seq):
             for word_tensor, label_tensor, predict_tensor in zip(line_tesor, labels_tensor, predicts_tensor):
