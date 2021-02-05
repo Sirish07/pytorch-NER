@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('--char_embedding_dim', type=int, default=30)
     parser.add_argument('--char_hidden_dim', type=int, default=50)
     parser.add_argument('--dropout', type=float, default=0.5)
-    parser.add_argument('--pretrain_embed_path', default='data/glove.6B.100d.txt')
+    parser.add_argument('--pretrain_embed_path', default='./data/glove.6B/glove.6B.100d.txt')
     parser.add_argument('--savedir', default='data/model')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--epochs', type=int, default=5)
